@@ -1,0 +1,47 @@
+<div class="container-fluid position-relative p-0">
+    <nav class="navbar navbar-expand-lg navbar-light px-4 px-lg-5 py-3 py-lg-0">
+        <a href="{{ url_for('home') }}" class="navbar-brand p-0">
+            <h1 class="text-primary m-0"><i class="fa fa-map-marker-alt me-3"></i>Tourist</h1>
+            </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+            <span class="fa fa-bars"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarCollapse">
+            <div class="navbar-nav ms-auto py-0">
+                <a href="{{ url_for('home') }}" class="nav-item nav-link">Home</a>
+                <a href="{{ url_for('about') }}" class="nav-item nav-link">About</a>
+                <a href="{{ url_for('services') }}" class="nav-item nav-link">Services</a>                   
+                <a href="{{ url_for('packages_page') }}" class="nav-item nav-link">Packages</a>
+                <div class="nav-item dropdown">
+                    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Pages</a>
+                    <div class="dropdown-menu m-0">
+                        <a href="{{ url_for('destination') }}" class="dropdown-item">Destination</a>
+                        <a href="{{ url_for('booking') }}" class="dropdown-item">Booking</a>
+                        <a href="{{ url_for('team') }}" class="dropdown-item">Travel Guides</a>
+                        <a href="{{ url_for('testimonial') }}" class="dropdown-item">Testimonial</a>
+                        <a href="{{ url_for('page_not_found_route') }}" class="dropdown-item">404 Page</a>                    </div>
+                </div>
+                <a href="{{ url_for('contact') }}" class="nav-item nav-link">Contact</a>
+            </div>
+            
+            {# START: Dynamic Login/Register/User Name Display (This block handles the right-side buttons) #}
+            {% if session.get('user_id') %}
+                <div class="nav-item dropdown">
+                    {# This link will act as the user's name/button #}
+                    <a href="#" class="btn btn-primary rounded-pill py-2 px-4 nav-link dropdown-toggle" data-bs-toggle="dropdown" style="color: white !important;">Hi, {{ session.username }}</a>
+                    <div class="dropdown-menu m-0">
+                        <a href="{{ url_for('my_bookings') }}" class="dropdown-item">My Bookings</a>
+                        {# Check if user is an admin for admin dashboard link #}
+                        {% if session.get('is_admin') %}<a href="{{ url_for('admin_dashboard') }}" class="dropdown-item">Admin Dashboard</a>{% endif %}
+                        <a href="{{ url_for('logout') }}" class="dropdown-item">Logout</a>
+                    </div>
+                </div>
+            {% else %}
+                {# Display Register and Login buttons if user is not logged in #}
+                <a href="{{ url_for('register') }}" class="btn btn-primary rounded-pill py-2 px-4 me-2">Register</a>
+                <a href="{{ url_for('user_login') }}" class="btn btn-outline-primary rounded-pill py-2 px-4">Login</a>
+            {% endif %}
+            {# END: Dynamic Login/Register/User Name Display #}
+        </div>
+    </nav>
+</div>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Tourist - Package Details</title>
+    {% include 'head.html' %}
+</head>
+<body>
+    <div id="spinner" class="show bg-white position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center">
+        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+    {% include 'navbar.html' %}
+
+    <div class="container-fluid bg-primary py-5 mb-5 hero-header">
+        <div class="container py-5">
+            <div class="row justify-content-center py-5">
+                <div class="col-lg-10 pt-lg-5 mt-lg-5 text-center">
+                    <h1 class="display-3 text-white animated slideInDown">Package Details</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb justify-content-center">
+                            <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Home</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('packages_page') }}">Packages</a></li>
+                            <li class="breadcrumb-item text-white active" aria-current="page">{{ package.name if package else 'Details' }}</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container-xxl py-5">
+        <div class="container">
+            {% if package %}
+            <div class="row g-5">
+                <div class="col-lg-7 wow fadeInUp" data-wow-delay="0.1s">
+                    <img class="img-fluid rounded mb-4" src="{{ url_for('static', filename='img/' + package.img) }}" alt="{{ package.name }}">
+                    <h1 class="mb-3 text-primary">{{ package.name }}</h1>
+                    <h4 class="mb-4">{{ package.price }} <small class="text-muted ms-2">({{ package.days }})</small></h4>
+
+                    <div class="d-flex border-bottom mb-4 pb-2">
+                        <small class="flex-fill text-center border-end py-2"><i class="fa fa-map-marker-alt text-primary me-2"></i>{{ package.location }}</small>
+                        <small class="flex-fill text-center py-2"><i class="fa fa-calendar-alt text-primary me-2"></i>{{ package.days }}</small>
+                    </div>
+
+                    <p class="mb-4">{{ package.description }}</p>
+
+                    {% if package.discount_percentage > 0 %}
+                        <p class="text-success fw-bold">Special Offer: {{ package.discount_percentage }}% OFF!</p>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-center mt-4">
+                        <a href="{{ url_for('book_now', package_id=package.id) }}" class="btn btn-primary py-3 px-5">Book This Package Now</a>
+                    </div>
+                </div>
+
+                <div class="col-lg-5 wow fadeInUp" data-wow-delay="0.3s">
+                    <h3 class="mb-4">Itinerary</h3>
+                    {% if itineraries %}
+                        {% for day in itineraries %}
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white" style="width: 40px; height: 40px;">{{ day.day_number }}</div>
+                            <div class="ms-3">
+                                <h5 class="mb-0">{{ day.title }}</h5>
+                                <small>{{ day.description }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p>No detailed itinerary available for this package yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center">
+                <h2 class="text-danger">Package Not Found!</h2>
+                <p>The package you are looking for does not exist.</p>
+                <a href="{{ url_for('packages_page') }}" class="btn btn-primary mt-3">Back to All Packages</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% include 'footer.html' %}
+    {% include 'script.html' %}
+</body>
+</html>

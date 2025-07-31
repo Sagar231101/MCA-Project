@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Tourist - Cookies Policy</title>
+    {% include 'head.html' %}
+</head>
+
+<body>
+    <div id="spinner" class="show bg-white position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center">
+        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+    {% include 'navbar.html' %}
+
+    <div class="container-fluid bg-primary py-5 mb-5 hero-header">
+        <div class="container py-5">
+            <div class="row justify-content-center py-5">
+                <div class="col-lg-10 pt-lg-5 mt-lg-5 text-center">
+                    <h1 class="display-3 text-white animated slideInDown">Cookies Policy</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb justify-content-center">
+                            <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Home</a></li>
+                            <li class="breadcrumb-item"><a href="#">Pages</a></li>
+                            <li class="breadcrumb-item text-white active" aria-current="page">Cookies</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container my-5 wow fadeInUp" data-wow-delay="0.1s">
+        <h2>Our Use of Cookies</h2>
+        <p>This website uses cookies to enhance your Browse experience, personalize content, and analyze our traffic. By continuing to use our site, you agree to our use of cookies as described in this policy.</p>
+
+        <h3>What are Cookies?</h3>
+        <p>Cookies are small text files that are placed on your device (computer, tablet, or mobile) when you visit a website. They are widely used to make websites work more efficiently, as well as to provide information to the owners of the site.</p>
+
+        <h3>How We Use Cookies</h3>
+        <ul>
+            <li><strong>Essential Cookies:</strong> These cookies are necessary for the website to function and cannot be switched off in our systems. They are usually only set in response to actions made by you which amount to a request for services, such as setting your privacy preferences, logging in, or filling out forms.</li>
+            <li><strong>Analytical/Performance Cookies:</strong> These allow us to recognize and count the number of visitors and to see how visitors move around our website when they are using it. This helps us to improve the way our website works, for example, by ensuring that users are finding what they are looking for easily.</li>
+            <li><strong>Functionality Cookies:</strong> These are used to recognize you when you return to our website. This enables us to personalize our content for you, greet you by name, and remember your preferences (for example, your choice of language or region).</li>
+            <li><strong>Targeting Cookies:</strong> These cookies record your visit to our website, the pages you have visited, and the links you have followed. We will use this information to make our website and the advertising displayed on it more relevant to your interests. We may also share this information with third parties for this purpose.</li>
+        </ul>
+
+        <h3>Third-Party Cookies</h3>
+        <p>In addition to our own cookies, we may also use various third-parties cookies to report usage statistics of the Service, deliver advertisements on and through the Service, and so on.</p>
+        <p>Examples include cookies set by Google Analytics for website traffic analysis and by advertising partners for personalized ads.</p>
+
+        <h3>Your Choices Regarding Cookies</h3>
+        <p>You have the ability to accept or decline cookies. Most web browsers automatically accept cookies, but you can usually modify your browser setting to decline cookies if you prefer. This may prevent you from taking full advantage of the website.</p>
+        <p>For more information on how to manage cookies, you can refer to your browser's help documentation or visit websites like <a href="http://www.allaboutcookies.org" target="_blank">allaboutcookies.org</a>.</p>
+        <p>Please note that disabling certain types of cookies may impact your experience on this site and the services we are able to offer.</p>
+    </div>
+
+    {% include 'footer.html' %}
+</body>
+
+</html>

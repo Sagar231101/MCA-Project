@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Tourist - Confirm Payment</title>
+    {% include 'head.html' %}
+</head>
+<body>
+    <div id="spinner" class="show bg-white position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center">
+        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+    {% include 'navbar.html' %}
+
+    <div class="container-fluid bg-primary py-5 mb-5 hero-header">
+        <div class="container py-5">
+            <div class="row justify-content-center py-5">
+                <div class="col-lg-10 pt-lg-5 mt-lg-5 text-center">
+                    <h1 class="display-3 text-white animated slideInDown">Confirm Your Payment</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb justify-content-center">
+                            <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Home</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('booking') }}">Booking</a></li>
+                            <li class="breadcrumb-item text-white active" aria-current="page">Payment</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container-xxl py-5 wow fadeInUp" data-wow-delay="0.1s">
+        <div class="container">
+            <div class="text-center pb-4">
+                <h6 class="section-title bg-white text-center text-primary px-3">Payment Gateway</h6>
+                <h1 class="mb-5">Confirm Your Booking Payment</h1>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="row justify-content-center mb-4">
+                        <div class="col-lg-8">
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {% if booking %}
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="card shadow p-4">
+                        <h4 class="card-title text-primary mb-3">Booking Summary</h4>
+                        <ul class="list-group list-group-flush mb-4">
+                            <li class="list-group-item"><strong>Package:</strong> {{ booking.package_name }}</li>
+                            <li class="list-group-item"><strong>Travel Date:</strong> {{ booking.travel_date.strftime('%Y-%m-%d') }}</li>
+                            <li class="list-group-item"><strong>Adults:</strong> {{ booking.num_adults }}</li>
+                            <li class="list-group-item"><strong>Children:</strong> {{ booking.num_children }}</li>
+                            <li class="list-group-item"><strong>Special Request:</strong> {{ booking.special_request if booking.special_request else 'N/A' }}</li>
+                            <li class="list-group-item list-group-item-success"><strong>Total Amount:</strong> ₹{{ "%.2f" | format(booking.total_price) }}</li>
+                        </ul>
+
+                        <p class="mb-4">Please click the button below to confirm your payment and finalize your booking.</p>
+
+                        <form action="{{ url_for('confirm_payment') }}" method="POST">
+                            <button type="submit" class="btn btn-primary py-3 px-5 w-100">Confirm Payment</button>
+                        </form>
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('booking') }}" class="btn btn-outline-secondary">Go Back to Booking Form</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center mt-5">
+                <h2 class="text-danger">No Booking Found!</h2>
+                <p>There are no booking details to process payment for.</p>
+                <a href="{{ url_for('booking') }}" class="btn btn-primary mt-3">Go to Booking Page</a>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+    {% include 'footer.html' %}
+    {% include 'script.html' %}
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Tourist - Attraction Search Results</title>
+    {% include 'head.html' %}
+</head>
+
+<body>
+    <div id="spinner" class="show bg-white position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center">
+        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+    {% include 'navbar.html' %}
+
+    <div class="container-fluid bg-primary py-5 mb-5 hero-header">
+        <div class="container py-5">
+            <div class="row justify-content-center py-5">
+                <div class="col-lg-10 pt-lg-5 mt-lg-5 text-center">
+                    <h1 class="display-3 text-white animated slideInDown">Attractions in {{ query | default("Searched Place") }}</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb justify-content-center">
+                            <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Home</a></li>
+                            <li class="breadcrumb-item"><a href="#">Search</a></li>
+                            <li class="breadcrumb-item text-white active" aria-current="page">Results</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container-xxl py-5">
+        <div class="container">
+            <div class="text-center wow fadeInUp" data-wow-delay="0.1s">
+                <h6 class="section-title bg-white text-center text-primary px-3">Attractions</h6>
+                <h1 class="mb-5">Found in "{{ query }}"</h1>
+            </div>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="row justify-content-center mb-4">
+                        <div class="col-lg-8">
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {% if attractions %}
+            <div class="row g-4">
+                {% for attraction in attractions %}
+                <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.1s">
+                    <div class="package-item">
+                        <div class="overflow-hidden">
+                            </div>
+                        <div class="d-flex border-bottom">
+                            <small class="flex-fill text-center border-end py-2"><i class="fa fa-map-marker-alt text-primary me-2"></i>{{ attraction.package_location }}</small>
+                            <small class="flex-fill text-center border-end py-2"><i class="fa fa-map-pin text-primary me-2"></i>Day {{ attraction.day_number }}</small>
+                            <small class="flex-fill text-center py-2"><i class="fa fa-list text-primary me-2"></i>{{ attraction.package_name }}</small>
+                        </div>
+                        <div class="p-4">
+                            <h5 class="mb-0">{{ attraction.title }}</h5>
+                            <p>{{ attraction.description }}</p>
+                            <a href="{{ url_for('read_more', package_id=attraction.package_id) }}" class="btn btn-sm btn-primary px-3" style="border-radius: 0 30px 30px 0;">View Package</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center">
+                <p>No attractions found for "{{ query }}". Try searching for another place or package name.</p>
+                <a href="{{ url_for('home') }}" class="btn btn-primary py-3 px-5 mt-2">Go Back to Home</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% include 'footer.html' %}
+    {% include 'script.html' %} {# Assuming you have a script.html for JS includes #}
+</body>
+</html>

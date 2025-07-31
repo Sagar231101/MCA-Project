@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Tourist - Admin Dashboard</title>
+    {% include 'head.html' %} {# Includes your meta tags, CSS links, etc. #}
+</head>
+<body>
+    <div id="spinner" class="show bg-white position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center">
+        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+
+    {% include 'navbar.html' %} {# Includes your navigation bar #}
+
+    <div class="container-fluid bg-primary py-5 mb-5 hero-header">
+        <div class="container py-5">
+            <div class="row justify-content-center py-5">
+                <div class="col-lg-10 pt-lg-5 mt-lg-5 text-center">
+                    <h1 class="display-3 text-white animated slideInDown">Admin Dashboard</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb justify-content-center">
+                            <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Home</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('admin_login') }}">Admin Login</a></li>
+                            <li class="breadcrumb-item text-white active" aria-current="page">Dashboard</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container-xxl py-5">
+        <div class="container">
+            <div class="text-center wow fadeInUp" data-wow-delay="0.1s">
+                <h6 class="section-title bg-white text-center text-primary px-3">Admin Panel</h6>
+                <h1 class="mb-5">Welcome, {{ session.username if session.username else 'Admin' }}!</h1>
+            </div>
+
+            {# Flash Messages Display #}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="row justify-content-center mb-4">
+                        <div class="col-lg-10">
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <div class="row g-4 mb-5">
+                <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.1s">
+                    <div class="card text-center p-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Users</h5>
+                            <p class="card-text display-4 text-primary">{{ total_users }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.3s">
+                    <div class="card text-center p-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Packages</h5>
+                            <p class="card-text display-4 text-primary">{{ total_packages }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.5s">
+                    <div class="card text-center p-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Pending Bookings</h5>
+                            <p class="card-text display-4 text-primary">{{ pending_bookings }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="mb-4">Admin Actions</h3>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <a href="{{ url_for('admin_packages') }}" class="btn btn-primary w-100 py-3">Manage Packages</a>
+                </div>
+                <div class="col-md-4">
+                    <a href="{{ url_for('admin_bookings') }}" class="btn btn-warning w-100 py-3">Manage Bookings</a> {# NEW BUTTON #}
+                </div>
+                <div class="col-md-4">
+                    <a href="#" class="btn btn-secondary w-100 py-3">Manage Users (Future)</a>
+                </div>
+                <div class="col-md-4">
+                    <a href="{{ url_for('admin_logout') }}" class="btn btn-danger w-100 py-3">Logout Admin</a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    {% include 'footer.html' %} {# Includes your footer #}
+    {% include 'script.html' %} {# Includes your JavaScript files #}
+</body>
+</html>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Tourist - Book Your Tour</title>
+    {% include 'head.html' %}
+</head>
+
+<body>
+    <div id="spinner" class="show bg-white position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center">
+        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+    {% include 'navbar.html' %}
+
+    <div class="container-fluid bg-primary py-5 mb-5 hero-header">
+        <div class="container py-5">
+            <div class="row justify-content-center py-5">
+                <div class="col-lg-10 pt-lg-5 mt-lg-5 text-center">
+                    <h1 class="display-3 text-white animated slideInDown">Booking</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb justify-content-center">
+                            <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Home</a></li>
+                            <li class="breadcrumb-item"><a href="#">Pages</a></li>
+                            <li class="breadcrumb-item text-white active" aria-current="page">Booking</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-xxl py-5 wow fadeInUp" data-wow-delay="0.1s">
+        <div class="container">
+            <div class="booking p-5">
+                <div class="row g-5 align-items-center">
+                    <div class="col-md-6 text-white">
+                        <h6 class="text-white text-uppercase">Booking</h6>
+                        <h1 class="text-white mb-4">Online Booking</h1>
+                        <p class="mb-4">"Planning your dream vacation is now easier than ever. Fill out our simple form to start your adventure."</p>
+                        <p class="mb-4">"We offer a seamless and enriching travel experience tailored to your preferences."</p>
+                        <a class="btn btn-outline-light py-3 px-5 mt-2" href="{{ url_for('packages_page') }}">View All Packages</a>
+                    </div>
+                    <div class="col-md-6">
+                        <h1 class="text-white mb-4">Book A Package</h1>
+                        {# Flash Messages Display #}
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                <div class="mb-3">
+                                    {% for category, message in messages %}
+                                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                            {{ message }}
+                                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        {% endwith %}
+
+                        <form action="{{ url_for('booking') }}" method="POST">
+                            <div class="row g-3">
+                                {# Removed Name and Email fields as user_id from session is used in app.py #}
+                                
+                                <div class="col-md-12"> {# Package Selection Dropdown #}
+                                    <div class="form-floating">
+                                        <select class="form-select bg-transparent" id="package_id" name="package_id" required>
+                                            <option value="">Select a Package</option>
+                                            {% for pkg in packages %}
+                                                <option value="{{ pkg.id }}" {% if preselected_package and preselected_package.id == pkg.id %}selected{% endif %}>
+                                                    {{ pkg.name }} ({{ pkg.location }} - {{ pkg.price }})
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                        <label for="package_id">Select Package</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6"> {# Travel Date Field #}
+                                    <div class="form-floating date" id="date3" data-target-input="nearest">
+                                        <input 
+                                            type="text" 
+                                            class="form-control bg-transparent datetimepicker-input" 
+                                            id="datetime" 
+                                            name="travel_date" 
+                                            placeholder="Travel Date" 
+                                            data-target="#date3" 
+                                            data-toggle="datetimepicker" 
+                                            data-td-format="YYYY-MM-DD" {# Crucial for date format #}
+                                            required 
+                                        />
+                                        <label for="datetime">Travel Date (YYYY-MM-DD)</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6"> {# Number of Adults Field #}
+                                    <div class="form-floating">
+                                        <input type="number" class="form-control bg-transparent" id="num_adults" name="num_adults" placeholder="Number of Adults" min="1" value="1" required>
+                                        <label for="num_adults">Number of Adults</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6"> {# Number of Children Field #}
+                                    <div class="form-floating">
+                                        <input type="number" class="form-control bg-transparent" id="num_children" name="num_children" placeholder="Number of Children" min="0" value="0" required>
+                                        <label for="num_children">Number of Children</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6"> {# This column is left empty or can be used for custom booking elements #}
+                                    {# If you remove Custom Booking entirely, you can adjust grid layout here #}
+                                </div>
+                                <div class="col-12"> {# Special Request Field #}
+                                    <div class="form-floating">
+                                        <textarea class="form-control bg-transparent" placeholder="Special Request" id="message" name="special_request" style="height: 100px"></textarea>
+                                        <label for="message">Special Request</label>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <button class="btn btn-outline-light w-100 py-3" type="submit">Confirm Package Booking</button>
+                                </div>
+                            </div>
+                        </form>
+
+                        {# Optional: Custom Booking Form (if you want to keep it separate) #}
+                        <h1 class="text-white mb-4 mt-5">Or Request a Custom Tour</h1>
+                        <form action="{{ url_for('booking') }}" method="POST">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <select class="form-select bg-transparent" id="custom_destination_id" name="custom_destination_id">
+                                            <option value="">Select a Known Destination (Optional)</option>
+                                            {% for dest in destinations %}
+                                                <option value="{{ dest.id }}">{{ dest.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <label for="custom_destination_id">Choose Destination</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control bg-transparent" id="custom_destination_name" name="custom_destination_name" placeholder="Or enter a custom destination name">
+                                        <label for="custom_destination_name">Custom Destination</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating date" id="date_start" data-target-input="nearest">
+                                        <input type="text" class="form-control bg-transparent datetimepicker-input" id="custom_start_date" name="custom_start_date" placeholder="Start Date" data-target="#date_start" data-toggle="datetimepicker" required />
+                                        <label for="custom_start_date">Start Date (YYYY-MM-DD)</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating date" id="date_end" data-target-input="nearest">
+                                        <input type="text" class="form-control bg-transparent datetimepicker-input" id="custom_end_date" name="custom_end_date" placeholder="End Date" data-target="#date_end" data-toggle="datetimepicker" required />
+                                        <label for="custom_end_date">End Date (YYYY-MM-DD)</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="number" class="form-control bg-transparent" id="custom_num_travelers" name="custom_num_travelers" placeholder="Number of Travelers" min="1" value="1" required>
+                                        <label for="custom_num_travelers">Number of Travelers</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control bg-transparent" id="custom_budget" name="custom_budget" placeholder="Your Budget (e.g., ₹50,000)">
+                                        <label for="custom_budget">Your Budget</label>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-floating">
+                                        <textarea class="form-control bg-transparent" placeholder="Specific preferences (e.g., interests, accommodation type)" id="preferences" name="preferences" style="height: 100px"></textarea>
+                                        <label for="preferences">Specific Preferences</label>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <button class="btn btn-outline-light w-100 py-3" type="submit">Submit Custom Request</button>
+                                </div>
+                            </div>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% include 'footer.html' %}
+    {% include 'script.html' %}
+</body>
+
+</html>
