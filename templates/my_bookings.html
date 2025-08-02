@@ -84,6 +84,16 @@
                                     <td>{{ booking.status }}</td>
                                     <td>{{ booking.special_request if booking.special_request else 'N/A' }}</td>
                                     <td>{{ booking.booking_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>
+                                      {% if booking.status != 'Cancelled' %}
+                                    <form action="/cancel-booking" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to cancel this booking?');">
+                                    <input type="hidden" name="booking_id" value="{{ booking.id }}">
+                                    <button type="submit" class="btn btn-danger btn-sm">Cancel</button>
+                                    </form>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Cancelled</span>
+                                    {% endif %}
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>

@@ -811,6 +811,35 @@ def my_bookings():
                            user_bookings=user_bookings, 
                            user_custom_bookings=user_custom_bookings)
 
+@app.route('/cancel-booking', methods=['POST'])
+def cancel_booking():
+    booking_id = request.form['booking_id']
+    try:
+        conn = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='Sagar@2311',  # 🔁 Replace this with your DB password
+            database='ai_tour_db'
+        )
+        cursor = conn.cursor()
+        cursor.execute("SELECT amount FROM bookings WHERE id = %s", (booking_id,))
+        result = cursor.fetchone()
+
+        if result:
+            original_amount = result[0]
+            refund_amount = round(original_amount * 0.9, 2)  # Deduct 10%
+        # You must have a 'status' column in 'bookings' table
+        cursor.execute("UPDATE bookings SET status = %s WHERE id = %s", ('Cancelled', booking_id))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        flash("Booking cancelled successfully.", "success")
+    except mysql.connector.Error as err:
+        flash(f"Error: {err}", "danger")
+    
+    return redirect(url_for('my_bookings'))  # 🔁 Replace with your user bookings view function name
+
+
 # --- Admin Routes (Basic Example) ---
 @app.route('/admin_login', methods=['GET', 'POST'])
 def admin_login():
