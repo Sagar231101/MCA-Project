@@ -812,33 +812,47 @@ def my_bookings():
                            user_custom_bookings=user_custom_bookings)
 
 @app.route('/cancel-booking', methods=['POST'])
+@login_required # Make sure user is logged in
 def cancel_booking():
-    booking_id = request.form['booking_id']
-    try:
-        conn = mysql.connector.connect(
-            host='localhost',
-            user='root',
-            password='Sagar@2311',  # 🔁 Replace this with your DB password
-            database='ai_tour_db'
-        )
-        cursor = conn.cursor()
-        cursor.execute("SELECT amount FROM bookings WHERE id = %s", (booking_id,))
-        result = cursor.fetchone()
+    booking_id = request.form.get('booking_id')
+    user_id = session.get('user_id')
 
-        if result:
-            original_amount = result[0]
-            refund_amount = round(original_amount * 0.9, 2)  # Deduct 10%
-        # You must have a 'status' column in 'bookings' table
-        cursor.execute("UPDATE bookings SET status = %s WHERE id = %s", ('Cancelled', booking_id))
-        conn.commit()
-        cursor.close()
-        conn.close()
-        flash("Booking cancelled successfully.", "success")
-    except mysql.connector.Error as err:
-        flash(f"Error: {err}", "danger")
+    if not booking_id:
+        flash("Invalid request.", "danger")
+        return redirect(url_for('my_bookings'))
+
+    # 1. Fetch the booking to ensure it belongs to the logged-in user and to get its status and price
+    # CORRECTED table name from 'bookings' to 'booking'
+    booking = fetch_one("""
+        SELECT id, status, total_price 
+        FROM booking 
+        WHERE id = %s AND user_id = %s
+    """, (booking_id, user_id))
+
+    if not booking:
+        flash("Booking not found or you do not have permission to cancel it.", "danger")
+        return redirect(url_for('my_bookings'))
+
+    # 2. Check if the booking can be cancelled
+    if booking['status'] != 'Confirmed':
+        flash(f"This booking cannot be cancelled as its status is '{booking['status']}'.", "warning")
+        return redirect(url_for('my_bookings'))
+
+    # 3. Proceed with cancellation and refund calculation
+    # CORRECTED column name from 'amount' to 'total_price'
+    original_amount = booking['total_price']
+    refund_amount = round(original_amount * 0.9, 2)  # Calculate 90% refund (10% deduction)
+
+    # 4. Update the booking status to 'Cancelled' using your execute_query helper
+    # CORRECTED table name from 'bookings' to 'booking'
+    sql_update = "UPDATE booking SET status = %s WHERE id = %s"
+    if execute_query(sql_update, ('Cancelled', booking_id)):
+        # 5. Flash a success message SHOWING the refund amount
+        flash(f"Booking cancelled successfully. An amount of ₹{refund_amount:,.2f} will be refunded.", "success")
+    else:
+        flash("There was an error cancelling the booking. Please try again.", "danger")
     
-    return redirect(url_for('my_bookings'))  # 🔁 Replace with your user bookings view function name
-
+    return redirect(url_for('my_bookings'))
 
 # --- Admin Routes (Basic Example) ---
 @app.route('/admin_login', methods=['GET', 'POST'])
