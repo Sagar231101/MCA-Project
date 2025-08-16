@@ -563,117 +563,78 @@ def packages_page():
     
     return render_template('package.html', packages=packages, search_country=search_country)
 
-
 @app.route('/booking', methods=['GET', 'POST'])
-@login_required # User must be logged in to book
+@login_required
 def booking():
     packages = fetch_all("SELECT id, name, location, price FROM package ORDER BY name")
-    destinations = fetch_all("SELECT id, name FROM destination ORDER BY name")
-
-    # Get pre-selected package ID if coming from 'Book Now' button
     preselect_package_id = request.args.get('preselect_id', type=int)
     preselected_package = None
     if preselect_package_id:
-        preselected_package = fetch_one("SELECT id, name, location, price FROM package WHERE id = %s", (preselect_package_id,))
-        if not preselected_package:
-            flash('Pre-selected package not found.', 'danger')
-            preselect_package_id = None # Clear if not found
-    
+        preselected_package = fetch_one("SELECT * FROM package WHERE id = %s", (preselect_package_id,))
+
     if request.method == 'POST':
         user_id = session.get('user_id')
-        if not user_id: # Double check, though @login_required should handle
-            flash('Please log in to make a booking.', 'warning')
-            return redirect(url_for('user_login'))
-        
-        # --- Package Booking Logic (Now stores in session, not DB) ---
         package_id = request.form.get('package_id', type=int)
         travel_date_str = request.form.get('travel_date')
-        num_adults = request.form.get('num_adults', type=int)
-        num_children = request.form.get('num_children', type=int)
+        num_adults = request.form.get('num_adults', type=int, default=1)
+        num_children = request.form.get('num_children', type=int, default=0)
         special_request = request.form.get('special_request')
 
-        # Basic validation before storing in session
-        if not package_id or not travel_date_str or num_adults is None or num_adults <= 0: # num_adults must be > 0
-            flash('Please ensure you select a package, provide a travel date, and enter number of adults (at least 1).', 'danger')
-            return redirect(url_for('booking', preselect_id=package_id)) 
+        if not package_id or not travel_date_str or num_adults <= 0:
+            flash('Please select a package, travel date, and at least one adult.', 'danger')
+            return redirect(url_for('booking', preselect_id=package_id))
 
+        package_details = fetch_one("SELECT id, name, price FROM package WHERE id = %s", (package_id,))
+        base_price_raw = package_details['price'].replace('₹', '').replace(',', '')
+        base_price = float(base_price_raw)
+        total_price = (base_price * num_adults) + (base_price * 0.5 * num_children)
+
+        # Store booking details in session and redirect to passenger form
+        session['temp_booking'] = {
+            'package_id': package_id,
+            'package_name': package_details['name'],
+            'travel_date': travel_date_str,
+            'num_adults': num_adults,
+            'num_children': num_children,
+            'total_price': total_price,
+            'special_request': special_request,
+            'user_id': user_id
+        }
+        return redirect(url_for('add_passengers'))
+
+    return render_template('booking.html', packages=packages, preselected_package=preselected_package)
+
+
+@app.route('/add-passengers', methods=['GET', 'POST'])
+@login_required
+def add_passengers():
+    temp_booking = session.get('temp_booking')
+    if not temp_booking:
+        flash('Your booking session has expired. Please start again.', 'warning')
+        return redirect(url_for('booking'))
+
+    total_passengers = temp_booking['num_adults'] + temp_booking['num_children']
+
+    if request.method == 'POST':
+        passengers = []
         try:
-            travel_date = datetime.strptime(travel_date_str, '%Y-%m-%d').date()
-            # Fetch package details to get price
-            package_details = fetch_one("SELECT id, name, price FROM package WHERE id = %s", (package_id,))
-            if not package_details:
-                flash('Selected package details not found for booking.', 'danger')
-                return redirect(url_for('booking'))
-            
-            base_price_raw = package_details['price'].replace('₹', '').replace(',', '')
-            base_price = float(base_price_raw)
-            total_price = (base_price * num_adults) + (base_price * 0.5 * num_children) 
+            for i in range(1, total_passengers + 1):
+                passenger = {
+                    'name': request.form[f'name_{i}'],
+                    'age': int(request.form[f'age_{i}']),
+                    'gender': request.form[f'gender_{i}'],
+                    'id_proof_type': request.form[f'id_proof_type_{i}'],
+                    'id_proof_number': request.form[f'id_proof_number_{i}']
+                }
+                passengers.append(passenger)
+        except (KeyError, ValueError):
+            flash('Please fill out all details for every passenger.', 'danger')
+            return render_template('add_passengers.html', booking=temp_booking, total_passengers=total_passengers)
 
-            # Store all booking details in session for later confirmation
-            session['temp_package_booking'] = {
-                'package_id': package_id,
-                'package_name': package_details['name'],
-                'travel_date': travel_date.strftime('%Y-%m-%d'), # Store as string for session
-                'num_adults': num_adults,
-                'num_children': num_children,
-                'total_price': total_price,
-                'special_request': special_request,
-                'user_id': user_id
-            }
-            
-            flash('Review your booking details for payment.', 'info')
-            return redirect(url_for('mock_payment_page')) # Redirect to mock payment page
-        
-        except ValueError:
-            flash('Invalid date format. Please ensure travel date is YYYY-MM-DD.', 'danger')
-        except Exception as e:
-            flash(f'An unexpected error occurred during package booking: {e}', 'danger')
+        session['temp_passengers'] = passengers
+        return redirect(url_for('mock_payment_page'))
 
-        # --- Custom Booking Logic --- (Remains the same as it was)
-    elif 'custom_start_date' in request.form and request.form.get('custom_start_date'):
-        custom_destination_id = request.form.get('custom_destination_id', type=int)
-        custom_destination_name = request.form.get('custom_destination_name')
-        start_date_str = request.form.get('custom_start_date')
-        end_date_str = request.form.get('custom_end_date')
-        num_travelers = request.form.get('custom_num_travelers', type=int)
-        preferences = request.form.get('custom_preferences')
-        budget = request.form.get('custom_budget')
-
-        if not ((custom_destination_id and custom_destination_id > 0) or custom_destination_name) or not start_date_str or not end_date_str or num_travelers is None:
-            flash('Invalid custom booking details. Please provide destination, dates, and number of travelers.', 'danger')
-            return redirect(url_for('booking'))
-
-        try:
-            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-            
-            final_dest_name = custom_destination_name
-            if custom_destination_id and custom_destination_id > 0:
-                dest_obj = fetch_one("SELECT name FROM destination WHERE id = %s", (custom_destination_id,))
-                if dest_obj:
-                    final_dest_name = dest_obj['name']
-
-            sql = """
-            INSERT INTO custom_booking (user_id, destination_id, destination_name, start_date, end_date, num_travelers, preferences, budget)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            """
-            if execute_query(sql, (user_id, custom_destination_id if custom_destination_id and custom_destination_id > 0 else None, final_dest_name, start_date, end_date, num_travelers, preferences, budget)):
-                flash('Custom booking request successfully sent! We will contact you soon.', 'success')
-                return redirect(url_for('my_bookings'))
-            else:
-                flash('Failed to send custom booking request. Please try again.', 'danger')
-        except ValueError:
-            flash('Invalid date format for custom booking. Please use YYYY-MM-DD.', 'danger')
-        except Exception as e:
-            flash(f'An unexpected error occurred during custom booking: {e}', 'danger')
-    else: # If it's a GET request, or a POST that didn't match either specific form.
-        flash('Please fill out either a package booking or a custom booking request.', 'warning') 
-        
-    return render_template('booking.html', 
-                           packages=packages, 
-                           destinations=destinations, 
-                           preselected_package=preselected_package)
-
+    return render_template('add_passengers.html', booking=temp_booking, total_passengers=total_passengers)
 
 @app.route('/destination')
 def destination():
@@ -1106,10 +1067,31 @@ def search_attractions():
 def read_more(package_id):
     package = fetch_one("SELECT * FROM package WHERE id = %s", (package_id,))
     if not package:
-        abort(404) # Or redirect to packages with a message
+        abort(404)
     
-    itineraries = fetch_all("SELECT * FROM itinerary WHERE package_id = %s ORDER BY day_number", (package_id,))
-    return render_template('package_detail.html', package=package, itineraries=itineraries, social=social_links)
+    # ✅ MODIFIED QUERY: This now joins itinerary with hotels to get hotel details for each day.
+    itineraries_query = """
+        SELECT i.*, h.name as hotel_name, h.rating as hotel_rating, h.image_url as hotel_image
+        FROM itinerary i
+        LEFT JOIN hotels h ON i.hotel_id = h.id
+        WHERE i.package_id = %s
+        ORDER BY i.day_number
+    """
+    itineraries = fetch_all(itineraries_query, (package_id,))
+    
+    # This query fetches all possible hotel choices for the package (optional to display)
+    hotels_query = """
+        SELECT h.* FROM hotels h
+        JOIN package_hotels ph ON h.id = ph.hotel_id
+        WHERE ph.package_id = %s
+    """
+    available_hotels = fetch_all(hotels_query, (package_id,))
+
+    return render_template('package_detail.html',
+                           package=package,
+                           itineraries=itineraries, # This now includes hotel info
+                           available_hotels=available_hotels,
+                           social=social_links)
 
 @app.route('/package/<int:package_id>/book-now')
 @login_required
@@ -1163,40 +1145,94 @@ def mock_payment_page():
     }
     return render_template('mock_payment.html', booking=booking_details)
 
-
 @app.route('/confirm_payment', methods=['POST'])
 @login_required
 def confirm_payment():
-    user_id = session.get('user_id')
-    temp_booking = session.get('temp_package_booking')
+    temp_booking = session.get('temp_booking')
+    temp_passengers = session.get('temp_passengers')
 
-    if not temp_booking or not user_id:
-        flash('No pending booking details found or session expired. Please book again.', 'danger')
+    if not temp_booking or not temp_passengers:
+        flash('Your booking session has expired. Please start again.', 'danger')
         return redirect(url_for('booking'))
 
-    # Extract details from session
-    package_id = temp_booking['package_id']
-    travel_date = datetime.strptime(temp_booking['travel_date'], '%Y-%m-%d').date()
-    num_adults = temp_booking['num_adults']
-    num_children = temp_booking['num_children']
-    total_price = temp_booking['total_price']
-    special_request = temp_booking['special_request']
+    conn = get_db_connection()
+    if not conn:
+        flash('Could not connect to the database.', 'danger')
+        return redirect(url_for('booking'))
     
-    # Perform the actual database INSERT here with 'Confirmed' status
-    sql = """
-    INSERT INTO booking (user_id, package_id, travel_date, num_adults, num_children, total_price, special_request, status)
-    VALUES (%s, %s, %s, %s, %s, %s, %s, 'Confirmed')
-    """
-    if execute_query(sql, (user_id, package_id, travel_date, num_adults, num_children, total_price, special_request)):
-        session.pop('temp_package_booking', None) # Clear temp data from session
-        flash('Payment successful! Your booking is now confirmed.', 'success')
-    else:
-        flash('Payment failed or booking could not be confirmed. Please try again or contact support.', 'danger')
+    cursor = conn.cursor()
+    try:
+        # 1. Insert into booking table
+        booking_sql = """
+        INSERT INTO booking (user_id, package_id, travel_date, num_adults, num_children, total_price, special_request, status)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, 'Confirmed')
+        """
+        booking_values = (
+            temp_booking['user_id'], temp_booking['package_id'], temp_booking['travel_date'],
+            temp_booking['num_adults'], temp_booking['num_children'], temp_booking['total_price'],
+            temp_booking['special_request']
+        )
+        cursor.execute(booking_sql, booking_values)
+        new_booking_id = cursor.lastrowid
 
-    return redirect(url_for('my_bookings'))
+        # 2. Insert into passengers table
+        passenger_sql = """
+        INSERT INTO passengers (booking_id, name, age, gender, id_proof_type, id_proof_number)
+        VALUES (%s, %s, %s, %s, %s, %s)
+        """
+        for passenger in temp_passengers:
+            passenger_values = (
+                new_booking_id, passenger['name'], passenger['age'], passenger['gender'],
+                passenger['id_proof_type'], passenger['id_proof_number']
+            )
+            cursor.execute(passenger_sql, passenger_values)
 
+        conn.commit()
+        
+        # Clear session data
+        session.pop('temp_booking', None)
+        session.pop('temp_passengers', None)
+        
+        flash('Payment successful! Your booking is confirmed.', 'success')
+        return redirect(url_for('booking_confirmation', booking_id=new_booking_id))
+    
+    except mysql.connector.Error as err:
+        conn.rollback()
+        print(f"Database Error: {err}")
+        flash('A database error occurred. Could not confirm booking.', 'danger')
+        return redirect(url_for('booking'))
+    finally:
+        cursor.close()
+        close_db_connection(conn)
 
+@app.route('/booking-confirmation/<int:booking_id>')
+@login_required
+def booking_confirmation(booking_id):
+    # Fetch booking details
+    booking_details = fetch_one("""
+        SELECT b.*, p.name as package_name, p.location, p.days, p.img
+        FROM booking b JOIN package p ON b.package_id = p.id
+        WHERE b.id = %s AND b.user_id = %s
+    """, (booking_id, session['user_id']))
 
+    if not booking_details:
+        flash('Booking not found or you do not have permission to view it.', 'danger')
+        return redirect(url_for('my_bookings'))
+
+    # Fetch passenger details
+    passengers = fetch_all("SELECT * FROM passengers WHERE booking_id = %s", (booking_id,))
+
+    # Fetch itinerary details
+    itinerary = fetch_all("""
+        SELECT i.*, h.name as hotel_name, h.rating as hotel_rating
+        FROM itinerary i LEFT JOIN hotels h ON i.hotel_id = h.id
+        WHERE i.package_id = %s ORDER BY i.day_number
+    """, (booking_details['package_id'],))
+
+    return render_template('booking_confirmation.html',
+                           booking=booking_details,
+                           passengers=passengers,
+                           itinerary=itinerary)
 
 # --- Error Handlers ---
 
