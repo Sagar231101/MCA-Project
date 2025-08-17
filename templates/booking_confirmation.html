@@ -1,103 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Tourist - Add Passengers</title>
+    <title>Tourist - Booking Confirmation</title>
     {% include 'head.html' %}
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            body * { visibility: hidden; }
+            .printable-area, .printable-area * { visibility: visible; }
+            .printable-area { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+    </style>
 </head>
 <body>
     {% include 'navbar.html' %}
-    <div class="container-fluid bg-primary py-5 mb-5 hero-header">
+    <div class="container-fluid bg-primary py-5 mb-5 hero-header no-print">
         <div class="container py-5">
             <div class="row justify-content-center py-5">
                 <div class="col-lg-10 pt-lg-5 mt-lg-5 text-center">
-                    <h1 class="display-3 text-white animated slideInDown">Passenger Details</h1>
+                    <h1 class="display-3 text-white animated slideInDown">Booking Confirmed!</h1>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="container-xxl py-5">
-        <div class="container">
+        <div class="container printable-area">
             <div class="text-center wow fadeInUp" data-wow-delay="0.1s">
-                <h6 class="section-title bg-white text-center text-primary px-3">Step 2 of 3</h6>
-                <h1 class="mb-5">Enter Traveler Information</h1>
+                <h6 class="section-title bg-white text-center text-primary px-3">Your Travel Voucher</h6>
+                <h1 class="mb-5">Booking Receipt</h1>
             </div>
 
-            <!-- Booking Summary -->
-            <div class="row justify-content-center mb-5">
-                <div class="col-lg-8">
-                    <div class="card">
-                        <div class="card-header">
-                            <h4>Booking Summary</h4>
-                        </div>
-                        <div class="card-body">
-                            <p><strong>Package:</strong> {{ booking.package_name }}</p>
-                            <p><strong>Travel Date:</strong> {{ booking.travel_date }}</p>
-                            <p><strong>Guests:</strong> {{ booking.num_adults }} Adult(s), {{ booking.num_children }} Child(ren)</p>
-                            <h4 class="text-end">Total Price: ₹{{ "%.2f" | format(booking.total_price) }}</h4>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <div class="card p-4">
+                <!-- Booking Details -->
+                <h3>Booking Details</h3>
+                <p><strong>Booking ID:</strong> TOURIST-00{{ booking.id }}</p>
+                <p><strong>Status:</strong> <span class="badge bg-success">{{ booking.status }}</span></p>
+                <hr>
 
-            <div class="row justify-content-center">
-                <div class="col-lg-8">
-                    <form action="{{ url_for('add_passengers') }}" method="POST">
-                        {% for i in range(1, total_passengers + 1) %}
-                        <div class="card mb-4 wow fadeInUp" data-wow-delay="{{ i * 0.1 }}s">
-                            <div class="card-header bg-primary text-white">
-                                <h5>Passenger {{ i }}</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="row g-3">
-                                    <div class="col-md-12">
-                                        <div class="form-floating">
-                                            <input type="text" class="form-control" id="name_{{ i }}" name="name_{{ i }}" placeholder="Full Name" required>
-                                            <label for="name_{{ i }}">Full Name</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-floating">
-                                            <input type="number" class="form-control" id="age_{{ i }}" name="age_{{ i }}" placeholder="Age" required>
-                                            <label for="age_{{ i }}">Age</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-floating">
-                                            <select class="form-select" id="gender_{{ i }}" name="gender_{{ i }}" required>
-                                                <option value="Male">Male</option>
-                                                <option value="Female">Female</option>
-                                                <option value="Other">Other</option>
-                                            </select>
-                                            <label for="gender_{{ i }}">Gender</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-floating">
-                                            <select class="form-select" id="id_proof_type_{{ i }}" name="id_proof_type_{{ i }}">
-                                                <option value="Aadhaar Card">Aadhaar Card</option>
-                                                <option value="Passport">Passport</option>
-                                                <option value="Driving License">Driving License</option>
-                                                <option value="Voter ID">Voter ID</option>
-                                            </select>
-                                            <label for="id_proof_type_{{ i }}">ID Proof Type</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-floating">
-                                            <input type="text" class="form-control" id="id_proof_number_{{ i }}" name="id_proof_number_{{ i }}" placeholder="ID Proof Number">
-                                            <label for="id_proof_number_{{ i }}">ID Proof Number</label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                <!-- Package Details -->
+                <h4>Package: {{ booking.package_name }}</h4>
+                <p><strong>Location:</strong> {{ booking.location }}</p>
+                <p><strong>Travel Date:</strong> {{ booking.travel_date.strftime('%d-%m-%Y') }}</p>
+                <p><strong>Duration:</strong> {{ booking.days }}</p>
+                <p><strong>Total Price:</strong> ₹{{ "%.2f" | format(booking.total_price) }}</p>
+                <hr>
+
+                <!-- ✅ START: CORRECTED PASSENGER LIST SECTION -->
+                <h4>Passenger List</h4>
+                <table class="table table-bordered">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>#</th>
+                            <th>Name</th>
+                            <th>Age</th>
+                            <th>Gender</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- This loop now correctly iterates through the 'passengers' list -->
+                        {% for passenger in passengers %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ passenger.name }}</td>
+                            <td>{{ passenger.age }}</td>
+                            <td>{{ passenger.gender }}</td>
+                        </tr>
                         {% endfor %}
-                        <div class="col-12 mt-4">
-                            <button class="btn btn-primary w-100 py-3" type="submit">Proceed to Payment</button>
-                        </div>
-                    </form>
+                    </tbody>
+                </table>
+                <!-- ✅ END: CORRECTED PASSENGER LIST SECTION -->
+                <hr>
+
+                <!-- Itinerary Details -->
+                <h4>Daily Itinerary</h4>
+                {% for item in itinerary %}
+                <div class="itinerary-day mb-3 p-3 border rounded">
+                    <h6>Day {{ item.day_number }}: {{ item.title }}</h6>
+                    <p>{{ item.description }}</p>
+                    {% if item.hotel_name %}
+                    <div class="hotel-info p-2" style="background-color: #f8f9fa; border-radius: 5px;">
+                        <p class="mb-0"><strong><i class="fa fa-bed me-2"></i>Hotel:</strong> {{ item.hotel_name }} ({{ item.hotel_rating }} <i class="fa fa-star text-warning"></i>)</p>
+                    </div>
+                    {% endif %}
                 </div>
+                {% endfor %}
+            </div>
+
+            <div class="text-center mt-4 no-print">
+                <button onclick="window.print()" class="btn btn-primary py-3 px-5">Print Receipt</button>
+                <a href="{{ url_for('home') }}" class="btn btn-secondary py-3 px-5">Back to Home</a>
             </div>
         </div>
     </div>

@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, flash, redirect, url_for, ses
 from werkzeug.security import generate_password_hash, check_password_hash
 import mysql.connector
 from datetime import datetime, date
+import sys # Add this import at the top of your app.py file if it's not there
 
 
 app = Flask(__name__)
@@ -563,9 +564,13 @@ def packages_page():
     
     return render_template('package.html', packages=packages, search_country=search_country)
 
+
 @app.route('/booking', methods=['GET', 'POST'])
 @login_required
 def booking():
+    print("\n--- STEP 1: AT BOOKING PAGE ---")
+    print(f"Session before processing: {session}")
+
     packages = fetch_all("SELECT id, name, location, price FROM package ORDER BY name")
     preselect_package_id = request.args.get('preselect_id', type=int)
     preselected_package = None
@@ -589,7 +594,6 @@ def booking():
         base_price = float(base_price_raw)
         total_price = (base_price * num_adults) + (base_price * 0.5 * num_children)
 
-        # Store booking details in session and redirect to passenger form
         session['temp_booking'] = {
             'package_id': package_id,
             'package_name': package_details['name'],
@@ -600,14 +604,18 @@ def booking():
             'special_request': special_request,
             'user_id': user_id
         }
+        session.modified = True
+        print(f"Session after adding booking details: {session}")
         return redirect(url_for('add_passengers'))
 
     return render_template('booking.html', packages=packages, preselected_package=preselected_package)
 
-
 @app.route('/add-passengers', methods=['GET', 'POST'])
 @login_required
 def add_passengers():
+    print("\n--- STEP 2: AT ADD PASSENGERS PAGE ---")
+    print(f"Session on arrival: {session}")
+
     temp_booking = session.get('temp_booking')
     if not temp_booking:
         flash('Your booking session has expired. Please start again.', 'warning')
@@ -632,6 +640,12 @@ def add_passengers():
             return render_template('add_passengers.html', booking=temp_booking, total_passengers=total_passengers)
 
         session['temp_passengers'] = passengers
+        session.modified = True
+        print(f"Session after adding passenger details: {session}")
+        # Let's also check the size of the session cookie
+        session_cookie = str(session)
+        print(f"Estimated session size: {sys.getsizeof(session_cookie)} bytes")
+        
         return redirect(url_for('mock_payment_page'))
 
     return render_template('add_passengers.html', booking=temp_booking, total_passengers=total_passengers)
@@ -1126,15 +1140,18 @@ def submit_feedback():
 
 
 # --- Payment Simulation Routes ---
-@app.route('/payment') # No booking_id in URL for this initial redirect
+
+@app.route('/payment')
 @login_required
 def mock_payment_page():
-    temp_booking = session.get('temp_package_booking')
+    print("\n--- STEP 3: AT PAYMENT PAGE ---")
+    print(f"Session on arrival at payment page: {session}")
+
+    temp_booking = session.get('temp_booking')
     if not temp_booking:
         flash('No pending booking details found. Please try booking again.', 'danger')
         return redirect(url_for('booking'))
     
-    # Reconstruct booking details for display (e.g., date object)
     booking_details = {
         'package_name': temp_booking['package_name'],
         'travel_date': datetime.strptime(temp_booking['travel_date'], '%Y-%m-%d').date(),
