@@ -129,20 +129,20 @@ def setup_database():
         )
         """,
         """
-        CREATE TABLE IF NOT EXISTS custom_booking (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT NOT NULL,
-            destination_id INT,
-            destination_name VARCHAR(200),
-            start_date DATE NOT NULL,
-            end_date DATE NOT NULL,
-            preferences TEXT,
-            num_travelers INT DEFAULT 1,
-            budget VARCHAR(100),
-            status VARCHAR(50) DEFAULT 'Pending',
-            FOREIGN KEY (user_id) REFERENCES user(id),
-            FOREIGN KEY (destination_id) REFERENCES destination(id)
-        )
+       CREATE TABLE IF NOT EXISTS custom_booking (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        destination_id INT,
+        destination_name VARCHAR(200),
+        start_date DATE NOT NULL,
+        end_date DATE NOT NULL,
+        preferences TEXT,
+        num_travelers INT DEFAULT 1,
+        budget VARCHAR(100),
+        status VARCHAR(50) DEFAULT 'Pending',
+        FOREIGN KEY (user_id) REFERENCES user(id), -- ✅ Add comma here
+        FOREIGN KEY (destination_id) REFERENCES destination(id)
+)
         """,
         """
         CREATE TABLE IF NOT EXISTS feedback (
@@ -609,6 +609,60 @@ def booking():
         return redirect(url_for('add_passengers'))
 
     return render_template('booking.html', packages=packages, preselected_package=preselected_package)
+@app.route('/custom-booking', methods=['GET', 'POST'])
+@login_required
+def custom_booking():
+    destinations = fetch_all("SELECT * FROM destination ORDER BY name")
+
+    if request.method == 'POST':
+        user_id = session.get('user_id')
+        destination_name = request.form.get('custom_destination_name', '').strip()
+        start_date_str = request.form.get('custom_start_date', '').strip()
+        end_date_str = request.form.get('custom_end_date', '').strip()
+        num_travelers = request.form.get('custom_num_travelers', type=int)
+        preferences = request.form.get('custom_preferences', '').strip()
+        budget = request.form.get('custom_budget')
+
+        if not all([destination_name, start_date_str, end_date_str, num_travelers, preferences]):
+            flash('Please fill out all required fields: Destination, Dates, Travelers, and Preferences.', 'danger')
+            return render_template('custom_booking.html', destinations=destinations)
+
+        try:
+            start_date = datetime.strptime(start_date_str, '%d-%m-%Y').date()
+            end_date = datetime.strptime(end_date_str, '%d-%m-%Y').date()
+            
+            sql = """
+            INSERT INTO custom_booking (user_id, destination_name, start_date, end_date, num_travelers, preferences, budget, status)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, 'Pending')
+            """
+            params = (user_id, destination_name, start_date, end_date, num_travelers, preferences, budget)
+
+            if execute_query(sql, params):
+                flash('Your custom tour request has been sent! We will contact you shortly.', 'success')
+                return redirect(url_for('my_bookings'))
+            else:
+                # This 'else' block is triggered if execute_query returns False
+                flash('Failed to send your request due to a database issue. Please try again.', 'danger')
+
+        except ValueError:
+            flash('Invalid date format. Please use DD-MM-YYYY.', 'danger')
+        
+        # ✅ START: ENHANCED ERROR CATCHING
+        # This will catch the specific database error and print it for us.
+        except mysql.connector.Error as db_err:
+            print("\n--- DATABASE ERROR CAUGHT ---")
+            print(f"Error: {db_err}")
+            print("-----------------------------\n")
+            flash(f'A database error occurred: {db_err}', 'danger')
+        # ✅ END: ENHANCED ERROR CATCHING
+
+        except Exception as e:
+            flash(f'An unexpected error occurred: {e}', 'danger')
+
+        return render_template('custom_booking.html', destinations=destinations)
+
+    return render_template('custom_booking.html', destinations=destinations)
+
 
 @app.route('/add-passengers', methods=['GET', 'POST'])
 @login_required

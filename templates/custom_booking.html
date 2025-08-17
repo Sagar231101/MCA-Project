@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Tourist - Custom Tour Request</title>
+    {% include 'head.html' %}
+</head>
+<body>
+    {% include 'navbar.html' %}
+    <div class="container-fluid bg-primary py-5 mb-5 hero-header">
+        <div class="container py-5">
+            <div class="row justify-content-center py-5">
+                <div class="col-lg-10 pt-lg-5 mt-lg-5 text-center">
+                    <h1 class="display-3 text-white animated slideInDown">Create Your Dream Tour</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-xxl py-5">
+        <div class="container">
+            <div class="text-center wow fadeInUp" data-wow-delay="0.1s">
+                <h6 class="section-title bg-white text-center text-primary px-3">Your Trip, Your Way</h6>
+                <h1 class="mb-5">Custom Itinerary Request</h1>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-lg-8 wow fadeInUp" data-wow-delay="0.3s">
+
+                    <!-- ✅ START: THIS BLOCK DISPLAYS THE ERROR MESSAGES -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    <!-- ✅ END: FLASH MESSAGE DISPLAY BLOCK -->
+
+                    <form action="{{ url_for('custom_booking') }}" method="POST">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="custom_destination_name" name="custom_destination_name" placeholder="E.g., Goa, Kerala" required>
+                                    <label for="custom_destination_name">Destination</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control" id="custom_num_travelers" name="custom_num_travelers" placeholder="Number of Travelers" min="1" value="1" required>
+                                    <label for="custom_num_travelers">Number of Travelers</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-floating date" id="custom_start_date_picker" data-target-input="nearest">
+                                    <input type="text" class="form-control datetimepicker-input" id="custom_start_date" name="custom_start_date" placeholder="Start Date" data-target="#custom_start_date_picker" required/>
+                                    <label for="custom_start_date">Start Date (DD-MM-YYYY)</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-floating date" id="custom_end_date_picker" data-target-input="nearest">
+                                    <input type="text" class="form-control datetimepicker-input" id="custom_end_date" name="custom_end_date" placeholder="End Date" data-target="#custom_end_date_picker" required/>
+                                    <label for="custom_end_date">End Date (DD-MM-YYYY)</label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="custom_budget" name="custom_budget" placeholder="E.g., ₹50,000 per person">
+                                    <label for="custom_budget">Your Budget (Optional)</label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-floating">
+                                    <textarea class="form-control" placeholder="Describe your ideal trip..." id="custom_preferences" name="custom_preferences" style="height: 150px" required></textarea>
+                                    <label for="custom_preferences">Itinerary Preferences & Details</label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <button class="btn btn-primary w-100 py-3" type="submit">Submit Request</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% include 'footer.html' %}
+    {% include 'script.html' %}
+</body>
+</html>
