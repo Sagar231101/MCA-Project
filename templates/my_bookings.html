@@ -35,7 +35,6 @@
                 <h1 class="mb-5">Your Travel Plans</h1>
             </div>
 
-            {# Flash Messages Display #}
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     <div class="row justify-content-center mb-4">
@@ -61,25 +60,19 @@
                                 <tr>
                                     <th>Booking ID</th>
                                     <th>Package Name</th>
-                                    <th>Location</th>
                                     <th>Travel Date</th>
-                                    <th>Guests</th>
-                                    <th>Total Price</th>
                                     <th>Status</th>
-                                    <th>Booked On</th>
-                                    <th>Action</th> </tr>
+                                    <th>Action</th> 
+                                </tr>
                             </thead>
                             <tbody>
                                 {% for booking in user_bookings %}
                                 <tr>
                                     <td>{{ booking.id }}</td>
                                     <td>{{ booking.package_name }}</td>
-                                    <td>{{ booking.package_location }}</td>
                                     <td>{{ booking.travel_date.strftime('%d %b, %Y') }}</td>
-                                    <td>{{ booking.num_adults }} Adult(s), {{ booking.num_children }} Child(ren)</td>
-                                    <td>₹{{ "%.2f" | format(booking.total_price) }}</td>
                                     <td>
-                                        {% if booking.status == 'Confirmed' %}
+                                        {% if booking.status == 'Confirmed' or booking.status == 'Paid' %}
                                             <span class="badge bg-success">Confirmed</span>
                                         {% elif booking.status == 'Cancelled' %}
                                             <span class="badge bg-danger">Cancelled</span>
@@ -87,18 +80,18 @@
                                             <span class="badge bg-warning text-dark">Pending</span>
                                         {% endif %}
                                     </td>
-                                    <td>{{ booking.booking_date.strftime('%d %b, %Y') }}</td>
                                     <td>
-                                        {% if booking.status == 'Confirmed' %}
-                                            <form action="{{ url_for('cancel_booking') }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel? A 10% cancellation fee will apply.');">
+                                        <!-- ✅ START: MODIFIED ACTION BUTTONS -->
+                                        {% if booking.status == 'Confirmed' or booking.status == 'Paid' %}
+                                            <a href="{{ url_for('booking_confirmation', booking_id=booking.id) }}" class="btn btn-info btn-sm mb-1">View Receipt</a>
+                                            <form action="{{ url_for('cancel_booking') }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel? A 10% fee will apply.');" style="display: inline;">
                                                 <input type="hidden" name="booking_id" value="{{ booking.id }}">
                                                 <button type="submit" class="btn btn-danger btn-sm">Cancel</button>
                                             </form>
-                                        {% elif booking.status == 'Cancelled' %}
-                                            <span>-</span>
                                         {% else %}
                                             <span>-</span>
                                         {% endif %}
+                                        <!-- ✅ END: MODIFIED ACTION BUTTONS -->
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -119,10 +112,8 @@
                                 <tr>
                                     <th>Request ID</th>
                                     <th>Destination</th>
-                                    <th>Dates</th>
-                                    <th>Travelers</th>
-                                    <th>Budget</th>
                                     <th>Status</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -130,16 +121,25 @@
                                 <tr>
                                     <td>{{ custom_booking.id }}</td>
                                     <td>{{ custom_booking.destination_name if custom_booking.destination_name else 'N/A' }}</td>
-                                    <td>{{ custom_booking.start_date.strftime('%d %b, %Y') }} to {{ custom_booking.end_date.strftime('%d %b, %Y') }}</td>
-                                    <td>{{ custom_booking.num_travelers }}</td>
-                                    <td>{{ custom_booking.budget if custom_booking.budget else 'N/A' }}</td>
                                     <td>
                                         {% if custom_booking.status == 'Pending' %}
                                             <span class="badge bg-info text-dark">Pending Review</span>
-                                        {% elif custom_booking.status == 'Approved' %}
-                                            <span class="badge bg-success">Approved</span>
+                                        {% elif custom_booking.status == 'Confirmed' %}
+                                            <span class="badge bg-warning text-dark">Awaiting Payment</span>
+                                        {% elif custom_booking.status == 'Paid' %}
+                                             <span class="badge bg-success">Paid & Confirmed</span>
                                         {% else %}
                                             <span class="badge bg-secondary">{{ custom_booking.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if custom_booking.status == 'Confirmed' %}
+                                            <a href="{{ url_for('pay_custom_booking', booking_id=custom_booking.id) }}" class="btn btn-success btn-sm">Pay Now</a>
+                                        {% elif custom_booking.status == 'Paid' %}
+                                            <!-- This will also need a confirmation page in the future -->
+                                            <span class="text-success">Payment Complete</span>
+                                        {% else %}
+                                            <span>-</span>
                                         {% endif %}
                                     </td>
                                 </tr>

@@ -100,7 +100,7 @@
                             <td>{{ booking.special_request if booking.special_request else 'N/A' }}</td>
                             <td>{{ booking.booking_date.strftime('%Y-%m-%d %H:%M') }}</td>
                             <td>
-                                <form action="{{ url_for('update_booking_status', booking_id=booking.id) }}" method="POST" style="display:inline-block;">
+                                <form action="{{ url_for('update_booking_status', booking_type='package', booking_id=booking.id) }}" method="POST">                     
                                     <input type="hidden" name="booking_type" value="package">
                                     <select name="status" class="form-select form-select-sm d-inline-block w-auto me-1">
                                         <option value="Pending" {% if booking.status == 'Pending' %}selected{% endif %}>Pending</option>
@@ -159,13 +159,15 @@
                                 </span>
                             </td>
                             <td>
-                                <form action="{{ url_for('update_booking_status', booking_id=booking.id) }}" method="POST" style="display:inline-block;">
-                                    <input type="hidden" name="booking_type" value="custom">
+                            <form action="{{ url_for('update_booking_status', booking_type='custom', booking_id=booking.id) }}" method="POST">                          
+                                       <input type="hidden" name="booking_type" value="custom">
                                     <select name="status" class="form-select form-select-sm d-inline-block w-auto me-1">
                                         <option value="Pending" {% if booking.status == 'Pending' %}selected{% endif %}>Pending</option>
                                         <option value="Confirmed" {% if booking.status == 'Confirmed' %}selected{% endif %}>Confirmed</option>
                                         <option value="Cancelled" {% if booking.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                                         <option value="Paid" {% if custom_booking.status == 'Paid' %}selected{% endif %}>Paid</option>
                                     </select>
+                                    <input type="number" name="total_price" class="form-control me-2 price-input" placeholder="Set Price" style="display: none;" value="{{ custom_booking.total_price or '' }}">
                                     <button type="submit" class="btn btn-sm btn-primary">Update</button>
                                 </form>
                             </td>
@@ -180,6 +182,22 @@
 
         </div>
     </div>
+    <script>
+function togglePriceInput(selectElement) {
+    const form = selectElement.closest('form');
+    const priceInput = form.querySelector('.price-input');
+    if (selectElement.value === 'Confirmed') {
+        priceInput.style.display = 'block';
+        priceInput.required = true;
+    } else {
+        priceInput.style.display = 'none';
+        priceInput.required = false;
+    }
+}
+// Run on page load to set initial state
+document.querySelectorAll('select[name="status"]').forEach(togglePriceInput);
+</script>
+
     <!-- End Admin Bookings Content Section -->
 
     {% include 'footer.html' %}

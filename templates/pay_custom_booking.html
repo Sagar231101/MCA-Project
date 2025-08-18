@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Tourist - Pay for Custom Tour</title>
+    {% include 'head.html' %}
+</head>
+<body>
+    {% include 'navbar.html' %}
+    <div class="container-fluid bg-primary py-5 mb-5 hero-header">
+        <div class="container py-5">
+            <div class="row justify-content-center py-5">
+                <div class="col-lg-10 pt-lg-5 mt-lg-5 text-center">
+                    <h1 class="display-3 text-white animated slideInDown">Confirm & Pay</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-xxl py-5">
+        <div class="container">
+            <div class="text-center wow fadeInUp" data-wow-delay="0.1s">
+                <h6 class="section-title bg-white text-center text-primary px-3">Final Step</h6>
+                <h1 class="mb-5">Pay for Your Custom Tour</h1>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-lg-8 wow fadeInUp" data-wow-delay="0.3s">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>Booking Summary</h4>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Request ID:</strong> CUSTOM-00{{ booking.id }}</p>
+                            <p><strong>Destination:</strong> {{ booking.destination_name }}</p>
+                            <p><strong>Dates:</strong> {{ booking.start_date.strftime('%d %b, %Y') }} to {{ booking.end_date.strftime('%d %b, %Y') }}</p>
+                            <p><strong>Travelers:</strong> {{ booking.num_travelers }}</p>
+                            <hr>
+                            <!-- ✅ MODIFIED LINE: Handles cases where total_price might be None -->
+                            <h3 class="text-end">Total Amount: ₹{{ "%.2f" | format(booking.total_price or 0) }}</h3>
+                        </div>
+                        <div class="card-footer">
+                            <form action="{{ url_for('confirm_custom_payment', booking_id=booking.id) }}" method="POST">
+                                <p>Click below to confirm your payment.</p>
+                                <button type="submit" class="btn btn-primary w-100 py-3">Confirm Payment</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% include 'footer.html' %}
+    {% include 'script.html' %}
+</body>
+</html>

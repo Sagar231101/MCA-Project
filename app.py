@@ -3,7 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import mysql.connector
 from datetime import datetime, date
 import sys # Add this import at the top of your app.py file if it's not there
-
+import re 
 
 app = Flask(__name__)
 
@@ -609,6 +609,9 @@ def booking():
         return redirect(url_for('add_passengers'))
 
     return render_template('booking.html', packages=packages, preselected_package=preselected_package)
+
+#-------Custom Booking Starts---------------#
+
 @app.route('/custom-booking', methods=['GET', 'POST'])
 @login_required
 def custom_booking():
@@ -663,6 +666,61 @@ def custom_booking():
 
     return render_template('custom_booking.html', destinations=destinations)
 
+
+@app.route('/custom-booking/pay/<int:booking_id>')
+@login_required
+def pay_custom_booking(booking_id):
+    # Fetch the custom booking
+    booking = fetch_one("""
+        SELECT * FROM custom_booking 
+        WHERE id = %s AND user_id = %s AND status = 'Confirmed'
+    """, (booking_id, session['user_id']))
+
+    if not booking:
+        flash('This custom booking is not available for payment.', 'danger')
+        return redirect(url_for('my_bookings'))
+
+    # ✅ START: NEW LOGIC FOR SUGGESTED PRICE
+    # If the admin has not set a price, calculate one from the user's budget.
+    if not booking['total_price'] or booking['total_price'] == 0:
+        user_budget = parse_budget(booking['budget'])
+        if user_budget:
+            # Calculate a price 2% higher than the budget
+            suggested_price = user_budget * 1.02
+            booking['total_price'] = suggested_price
+    # ✅ END: NEW LOGIC FOR SUGGESTED PRICE
+
+    return render_template('pay_custom_booking.html', booking=booking)
+
+
+
+@app.route('/custom-booking/confirm-payment/<int:booking_id>', methods=['POST'])
+@login_required
+def confirm_custom_payment(booking_id):
+    # In a real app, you would process payment here. We will just update the status.
+    sql = "UPDATE custom_booking SET status = 'Paid' WHERE id = %s AND user_id = %s"
+    
+    if execute_query(sql, (booking_id, session['user_id'])):
+        flash('Payment successful! Your custom tour is now fully booked.', 'success')
+    else:
+        flash('There was an error confirming your payment.', 'danger')
+
+    return redirect(url_for('my_bookings'))
+
+def parse_budget(budget_str):
+    """
+    Extracts a number from a budget string (e.g., '₹50,000 per person').
+    Returns a float or None if no number is found.
+    """
+    if not budget_str:
+        return None
+    # Remove commas and find all numbers in the string
+    numbers = re.findall(r'\d+', budget_str.replace(',', ''))
+    if numbers:
+        return float(numbers[0])
+    return None
+
+#---------Adding Passengers Details for Package Booking---------------------#
 
 @app.route('/add-passengers', methods=['GET', 'POST'])
 @login_required
@@ -805,11 +863,18 @@ def user_login():
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['is_admin'] = user['is_admin']
+            
+            # ✅ NEW: Record the login timestamp
+            now = datetime.now()
+            update_login_sql = "UPDATE user SET last_login = %s WHERE id = %s"
+            execute_query(update_login_sql, (now, user['id']))
+            
             flash('Logged in successfully!', 'success')
             return redirect(url_for('home'))
         else:
             flash('Invalid username or password.', 'danger')
     return render_template('login.html')
+
 
 @app.route('/logout')
 def logout():
@@ -988,18 +1053,71 @@ def admin_bookings():
     return render_template('admin/bookings.html', 
                            package_bookings=all_package_bookings, 
                            custom_bookings=all_custom_bookings)
-@app.route('/admin/bookings/update/<int:booking_id>', methods=['POST'])
-def update_booking_status(booking_id):
-    new_status = request.form.get('status')  # e.g., "confirmed", "cancelled", etc.
-    db = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="Sagar@2311",
-        database="ai_tour_db"
-    )
-    cursor = db.cursor()
-    cursor.execute("UPDATE bookings SET status = %s WHERE id = %s", (new_status, booking_id))
-    db.commit()
+
+@app.route('/admin/users')
+@admin_login_required
+def admin_manage_users():
+    # Fetch all non-admin users from the database
+    all_users = fetch_all("SELECT id, username, email, last_login FROM user WHERE is_admin = FALSE ORDER BY id")
+    return render_template('admin/manage_users.html', users=all_users)
+
+@app.route('/admin/users/delete/<int:user_id>', methods=['POST'])
+@admin_login_required
+def delete_user(user_id):
+    # To prevent errors, it's important to first delete all data that
+    # references this user in other tables (like bookings, feedback, etc.).
+    
+    execute_query("DELETE FROM booking WHERE user_id = %s", (user_id,))
+    execute_query("DELETE FROM custom_booking WHERE user_id = %s", (user_id,))
+    execute_query("DELETE FROM feedback WHERE user_id = %s", (user_id,))
+
+    # Now that the related data is gone, it's safe to delete the user.
+    if execute_query("DELETE FROM user WHERE id = %s", (user_id,)):
+        flash('User and all their associated data have been deleted successfully!', 'success')
+    else:
+        flash('Failed to delete the user.', 'danger')
+        
+    return redirect(url_for('admin_manage_users'))
+
+# Replace your existing update_booking_status function with this corrected version.
+
+
+@app.route('/admin/bookings/update/<string:booking_type>/<int:booking_id>', methods=['POST'])
+@admin_login_required
+def update_booking_status(booking_type, booking_id):
+    new_status = request.form.get('status')
+
+    if not new_status:
+        flash('No status selected.', 'warning')
+        return redirect(url_for('admin_bookings'))
+
+    table_name = ''
+    if booking_type == 'package':
+        table_name = 'booking'
+    elif booking_type == 'custom':
+        table_name = 'custom_booking'
+    else:
+        flash('Invalid booking type specified.', 'danger')
+        return redirect(url_for('admin_bookings'))
+
+    # If a custom booking is confirmed, admin must set a price
+    if booking_type == 'custom' and new_status == 'Confirmed':
+        total_price = request.form.get('total_price')
+        if not total_price:
+            flash('Please set a total price for the confirmed custom booking.', 'danger')
+            return redirect(url_for('admin_bookings'))
+        
+        sql = f"UPDATE {table_name} SET status = %s, total_price = %s WHERE id = %s"
+        params = (new_status, total_price, booking_id)
+    else:
+        sql = f"UPDATE {table_name} SET status = %s WHERE id = %s"
+        params = (new_status, booking_id)
+    
+    if execute_query(sql, params):
+        flash(f"Booking ID {booking_id} ({booking_type}) has been updated to '{new_status}'.", 'success')
+    else:
+        flash(f'There was an error updating the {booking_type} booking status.', 'danger')
+        
     return redirect(url_for('admin_bookings'))
 
 @app.route('/admin_logout')
