@@ -100,8 +100,7 @@
                             <td>{{ booking.special_request if booking.special_request else 'N/A' }}</td>
                             <td>{{ booking.booking_date.strftime('%Y-%m-%d %H:%M') }}</td>
                             <td>
-                                <form action="{{ url_for('update_booking_status', booking_type='package', booking_id=booking.id) }}" method="POST">                     
-                                    <input type="hidden" name="booking_type" value="package">
+                                <form action="{{ url_for('update_booking_status', booking_type='package', booking_id=booking.id) }}" method="POST">                                 
                                     <select name="status" class="form-select form-select-sm d-inline-block w-auto me-1">
                                         <option value="Pending" {% if booking.status == 'Pending' %}selected{% endif %}>Pending</option>
                                         <option value="Confirmed" {% if booking.status == 'Confirmed' %}selected{% endif %}>Confirmed</option>
@@ -139,37 +138,39 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for booking in custom_bookings %}
+                        <!-- ✅ CORRECTED LOOP VARIABLE HERE -->
+                        {% for custom_booking in custom_bookings %}
                         <tr>
-                            <td>{{ booking.id }}</td>
-                            <td>{{ booking.user_username }}</td>
-                            <td>{{ booking.destination_name_from_db if booking.destination_name_from_db else booking.destination_name }}</td>
-                            <td>{{ booking.start_date.strftime('%Y-%m-%d') }}</td>
-                            <td>{{ booking.end_date.strftime('%Y-%m-%d') }}</td>
-                            <td>{{ booking.num_travelers }}</td>
-                            <td>{{ booking.budget if booking.budget else 'N/A' }}</td>
-                            <td>{{ booking.preferences | truncate(50, True, '...') }}</td>
+                            <td>{{ custom_booking.id }}</td>
+                            <td>{{ custom_booking.user_username }}</td>
+                            <td>{{ custom_booking.destination_name_from_db if custom_booking.destination_name_from_db else custom_booking.destination_name }}</td>
+                            <td>{{ custom_booking.start_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ custom_booking.end_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ custom_booking.num_travelers }}</td>
+                            <td>{{ custom_booking.budget if custom_booking.budget else 'N/A' }}</td>
+                            <td>{{ custom_booking.preferences | truncate(50, True, '...') }}</td>
                             <td>
                                 <span class="badge 
-                                    {% if booking.status == 'Pending' %}bg-warning
-                                    {% elif booking.status == 'Confirmed' %}bg-success
-                                    {% elif booking.status == 'Cancelled' %}bg-danger
+                                    {% if custom_booking.status == 'Pending' %}bg-warning
+                                    {% elif custom_booking.status == 'Confirmed' %}bg-success
+                                    {% elif custom_booking.status == 'Cancelled' %}bg-danger
                                     {% else %}bg-secondary{% endif %}">
-                                    {{ booking.status }}
+                                    {{ custom_booking.status }}
                                 </span>
                             </td>
                             <td>
-                            <form action="{{ url_for('update_booking_status', booking_type='custom', booking_id=booking.id) }}" method="POST">                          
-                                       <input type="hidden" name="booking_type" value="custom">
-                                    <select name="status" class="form-select form-select-sm d-inline-block w-auto me-1">
-                                        <option value="Pending" {% if booking.status == 'Pending' %}selected{% endif %}>Pending</option>
-                                        <option value="Confirmed" {% if booking.status == 'Confirmed' %}selected{% endif %}>Confirmed</option>
-                                        <option value="Cancelled" {% if booking.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
-                                         <option value="Paid" {% if custom_booking.status == 'Paid' %}selected{% endif %}>Paid</option>
-                                    </select>
-                                    <input type="number" name="total_price" class="form-control me-2 price-input" placeholder="Set Price" style="display: none;" value="{{ custom_booking.total_price or '' }}">
-                                    <button type="submit" class="btn btn-sm btn-primary">Update</button>
-                                </form>
+                            <!-- ✅ CORRECTED LOOP VARIABLE HERE -->
+                            <form action="{{ url_for('update_booking_status', booking_type='custom', booking_id=custom_booking.id) }}" method="POST" class="d-flex">
+                                <select name="status" class="form-select form-select-sm me-2" onchange="togglePriceInput(this)">
+                                    <option value="Pending" {% if custom_booking.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                    <option value="Confirmed" {% if custom_booking.status == 'Confirmed' %}selected{% endif %}>Confirmed</option>
+                                    <option value="Cancelled" {% if custom_booking.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                                    <option value="Paid" {% if custom_booking.status == 'Paid' %}selected{% endif %}>Paid</option>
+                                </select>
+                                <!-- ✅ CORRECTED LOOP VARIABLE HERE -->
+                                <input type="number" name="total_price" class="form-control me-2 price-input" placeholder="Set Price" style="display: none;" value="{{ custom_booking.total_price or '' }}">
+                                <button type="submit" class="btn btn-sm btn-primary">Update</button>
+                            </form>
                             </td>
                         </tr>
                         {% endfor %}
@@ -183,20 +184,24 @@
         </div>
     </div>
     <script>
-function togglePriceInput(selectElement) {
-    const form = selectElement.closest('form');
-    const priceInput = form.querySelector('.price-input');
-    if (selectElement.value === 'Confirmed') {
-        priceInput.style.display = 'block';
-        priceInput.required = true;
-    } else {
-        priceInput.style.display = 'none';
-        priceInput.required = false;
+    function togglePriceInput(selectElement) {
+        const form = selectElement.closest('form');
+        const priceInput = form.querySelector('.price-input');
+        if (selectElement.value === 'Confirmed') {
+            priceInput.style.display = 'inline-block';
+            priceInput.required = true;
+        } else {
+            priceInput.style.display = 'none';
+            priceInput.required = false;
+        }
     }
-}
-// Run on page load to set initial state
-document.querySelectorAll('select[name="status"]').forEach(togglePriceInput);
-</script>
+    // Run on page load to set initial state for all forms
+    document.addEventListener("DOMContentLoaded", function() {
+        document.querySelectorAll('select[name="status"]').forEach(function(selectElement) {
+            togglePriceInput(selectElement);
+        });
+    });
+    </script>
 
     <!-- End Admin Bookings Content Section -->
 

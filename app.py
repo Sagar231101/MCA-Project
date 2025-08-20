@@ -564,13 +564,9 @@ def packages_page():
     
     return render_template('package.html', packages=packages, search_country=search_country)
 
-
 @app.route('/booking', methods=['GET', 'POST'])
 @login_required
 def booking():
-    print("\n--- STEP 1: AT BOOKING PAGE ---")
-    print(f"Session before processing: {session}")
-
     packages = fetch_all("SELECT id, name, location, price FROM package ORDER BY name")
     preselect_package_id = request.args.get('preselect_id', type=int)
     preselected_package = None
@@ -589,6 +585,18 @@ def booking():
             flash('Please select a package, travel date, and at least one adult.', 'danger')
             return redirect(url_for('booking', preselect_id=package_id))
 
+        # ✅ START: DATE FORMAT CORRECTION FOR DD-MM-YYYY
+        try:
+            # Parse the incoming date (e.g., '23-09-2025') from the form
+            dt_object = datetime.strptime(travel_date_str.strip(), '%d-%m-%Y')
+            # Reformat it to the standard 'YYYY-MM-DD' for the database and session
+            travel_date_for_db = dt_object.strftime('%Y-%m-%d')
+        except ValueError:
+            # If the date format is wrong, show an error
+            flash('Invalid date format. Please use DD-MM-YYYY.', 'danger')
+            return redirect(url_for('booking', preselect_id=package_id))
+        # ✅ END: DATE FORMAT CORRECTION
+
         package_details = fetch_one("SELECT id, name, price FROM package WHERE id = %s", (package_id,))
         base_price_raw = package_details['price'].replace('₹', '').replace(',', '')
         base_price = float(base_price_raw)
@@ -597,7 +605,7 @@ def booking():
         session['temp_booking'] = {
             'package_id': package_id,
             'package_name': package_details['name'],
-            'travel_date': travel_date_str,
+            'travel_date': travel_date_for_db, # Use the correctly formatted date string
             'num_adults': num_adults,
             'num_children': num_children,
             'total_price': total_price,
@@ -605,7 +613,6 @@ def booking():
             'user_id': user_id
         }
         session.modified = True
-        print(f"Session after adding booking details: {session}")
         return redirect(url_for('add_passengers'))
 
     return render_template('booking.html', packages=packages, preselected_package=preselected_package)
