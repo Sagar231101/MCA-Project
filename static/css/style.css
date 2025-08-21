@@ -441,3 +441,103 @@
     padding-right: 0;
     border-right: none;
 }
+
+.explore-toggle-btn {
+    position: fixed;
+    bottom: 90px; /* Positioned above the back-to-top button */
+    right: 20px;
+    background-color: #0d6efd;
+    color: white;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
+    font-size: 24px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    cursor: pointer;
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.explore-widget {
+    position: fixed;
+    bottom: 160px;
+    right: 20px;
+    width: 350px;
+    max-width: 90%;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    display: none; /* Initially hidden */
+    flex-direction: column;
+    z-index: 9999;
+}
+
+.explore-header {
+    background-color: #0d6efd;
+    color: white;
+    padding: 10px 15px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.close-explore {
+    cursor: pointer;
+    font-size: 20px;
+}
+.explore-body {
+    height: 300px;
+    padding: 15px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.explore-body .bot-message {
+    background-color: #f1f1f1;
+    padding: 8px 12px;
+    border-radius: 15px;
+    max-width: 80%;
+    align-self: flex-start;
+}
+#explore-results .attraction-item {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+#explore-results h6 {
+    font-weight: bold;
+    color: #0d6efd;
+}
+.explore-footer {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+}
+#explore-form {
+    display: flex;
+    width: 100%;
+}
+#explore-input {
+    flex-grow: 1;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    padding: 8px 12px;
+    outline: none;
+}
+.explore-footer button {
+    background-color: #0d6efd;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    margin-left: 10px;
+    cursor: pointer;
+    font-size: 18px;
+    flex-shrink: 0;
+}

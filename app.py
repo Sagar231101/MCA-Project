@@ -2,8 +2,25 @@ from flask import Flask, render_template, request, flash, redirect, url_for, ses
 from werkzeug.security import generate_password_hash, check_password_hash
 import mysql.connector
 from datetime import datetime, date
-import sys # Add this import at the top of your app.py file if it's not there
+import sys 
 import re 
+import google.generativeai as genai
+from flask import jsonify
+
+
+
+GOOGLE_API_KEY = 'YOUR_GOOGLE_AI_API_KEY_HERE' # Replace with your actual key
+model = None # Initialize model as None
+
+try:
+    genai.configure(api_key=GOOGLE_API_KEY)
+    model = genai.GenerativeModel('gemini-pro')
+    print("✅ AI Model (gemini-pro) configured successfully.")
+except Exception as e:
+    print(f"❌ Error configuring Google AI: {e}")
+    # The 'model' will remain None, and the app will show an error message if used.
+
+
 
 app = Flask(__name__)
 
@@ -954,6 +971,44 @@ def cancel_booking():
         flash("There was an error cancelling the booking. Please try again.", "danger")
     
     return redirect(url_for('my_bookings'))
+
+
+
+#------AI Route-------
+
+# ✅ START: NEW API ROUTE FOR THE WIDGET
+@app.route('/api/explore', methods=['POST'])
+def api_explore():
+    if not model:
+        return jsonify({'error': 'AI model is not available.'}), 500
+
+    data = request.get_json()
+    place_name = data.get('place_name')
+
+    if not place_name:
+        return jsonify({'error': 'Destination name is required.'}), 400
+
+    try:
+        prompt = (
+            f"List the top 5 must-visit tourist attractions in {place_name}. "
+            "For each, provide a one-sentence description. "
+            "Format as a numbered list: '1. Name - Description.'"
+        )
+        response = model.generate_content(prompt)
+        
+        attractions = []
+        for line in response.text.strip().split('\n'):
+            if '. ' in line:
+                parts = line.split('. ', 1)[1].split(' - ', 1)
+                if len(parts) == 2:
+                    attractions.append({'name': parts[0].strip(), 'description': parts[1].strip()})
+        
+        return jsonify({'attractions': attractions})
+
+    except Exception as e:
+        print(f"API AI Error: {e}")
+        return jsonify({'error': 'An error occurred while fetching data.'}), 500
+# ✅ END: NEW API ROUTE FOR THE WIDGET
 
 # --- Admin Routes (Basic Example) ---
 @app.route('/admin_login', methods=['GET', 'POST'])
