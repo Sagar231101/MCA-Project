@@ -716,20 +716,56 @@ def pay_custom_booking(booking_id):
 
     return render_template('pay_custom_booking.html', booking=booking)
 
+@app.route('/custom-booking-confirmation/<int:booking_id>')
+@login_required
+def custom_booking_confirmation(booking_id):
+    # Fetch the details for the specific custom booking
+    booking_details = fetch_one("""
+        SELECT * FROM custom_booking
+        WHERE id = %s AND user_id = %s
+    """, (booking_id, session['user_id']))
+
+    if not booking_details:
+        flash('Custom booking not found or you do not have permission to view it.', 'danger')
+        return redirect(url_for('my_bookings'))
+
+    # Note: The current database design does not store individual passenger names for custom bookings.
+    # We will display the total number of travelers from the booking itself.
+
+    return render_template('custom_booking_confirmation.html',
+                           booking=booking_details)
 
 
 @app.route('/custom-booking/confirm-payment/<int:booking_id>', methods=['POST'])
 @login_required
 def confirm_custom_payment(booking_id):
-    # In a real app, you would process payment here. We will just update the status.
-    sql = "UPDATE custom_booking SET status = 'Paid' WHERE id = %s AND user_id = %s"
+    # First, fetch the booking to get the budget and current price
+    booking = fetch_one("SELECT total_price, budget FROM custom_booking WHERE id = %s AND user_id = %s", (booking_id, session['user_id']))
+
+    if not booking:
+        flash('Booking not found.', 'danger')
+        return redirect(url_for('my_bookings'))
+
+    final_price = booking['total_price']
+
+    # If the admin did not set a price, calculate it from the user's budget
+    if not final_price or final_price == 0:
+        user_budget = parse_budget(booking['budget'])
+        if user_budget:
+            final_price = user_budget * 1.02 # Calculate price 2% higher than budget
+        else:
+            final_price = 0 # Default to 0 if no budget is found
+
+    # Now, update both the status and the final price in the database
+    sql = "UPDATE custom_booking SET status = 'Paid', total_price = %s WHERE id = %s AND user_id = %s"
     
-    if execute_query(sql, (booking_id, session['user_id'])):
+    if execute_query(sql, (final_price, booking_id, session['user_id'])):
         flash('Payment successful! Your custom tour is now fully booked.', 'success')
+        return redirect(url_for('custom_booking_confirmation', booking_id=booking_id))
     else:
         flash('There was an error confirming your payment.', 'danger')
+        return redirect(url_for('my_bookings'))
 
-    return redirect(url_for('my_bookings'))
 
 def parse_budget(budget_str):
     """

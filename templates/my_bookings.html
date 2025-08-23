@@ -132,14 +132,14 @@
                                             <span class="badge bg-secondary">{{ custom_booking.status }}</span>
                                         {% endif %}
                                     </td>
-                                    <td>
+                                   <td>
                                         {% if custom_booking.status == 'Confirmed' %}
-                                            <a href="{{ url_for('pay_custom_booking', booking_id=custom_booking.id) }}" class="btn btn-success btn-sm">Pay Now</a>
+                                        <a href="{{ url_for('pay_custom_booking', booking_id=custom_booking.id) }}" class="btn btn-success btn-sm">Pay Now</a>
                                         {% elif custom_booking.status == 'Paid' %}
-                                            <!-- This will also need a confirmation page in the future -->
-                                            <span class="text-success">Payment Complete</span>
+                                        <!-- ✅ ADD THIS LINK -->
+                                        <a href="{{ url_for('custom_booking_confirmation', booking_id=custom_booking.id) }}" class="btn btn-info btn-sm">View Receipt</a>
                                         {% else %}
-                                            <span>-</span>
+                                        <span>-</span>
                                         {% endif %}
                                     </td>
                                 </tr>
