@@ -1011,41 +1011,69 @@ def cancel_booking():
 
 
 #------AI Route-------
-
-# ✅ START: NEW API ROUTE FOR THE WIDGET
 @app.route('/api/explore', methods=['POST'])
 def api_explore():
     if not model:
         return jsonify({'error': 'AI model is not available.'}), 500
 
     data = request.get_json()
-    place_name = data.get('place_name')
+    # The 'place_name' variable will now hold the user's general question
+    user_query = data.get('place_name') 
+    intent = data.get('intent')
 
-    if not place_name:
-        return jsonify({'error': 'Destination name is required.'}), 400
+    if not user_query or not intent:
+        return jsonify({'error': 'Query and intent are required.'}), 400
 
     try:
-        prompt = (
-            f"List the top 5 must-visit tourist attractions in {place_name}. "
-            "For each, provide a one-sentence description. "
-            "Format as a numbered list: '1. Name - Description.'"
-        )
+        prompt = ""
+        if intent == 'attractions':
+            prompt = f"List the top 5 must-visit tourist attractions in {user_query}. For each, provide a one-sentence description."
+        elif intent == 'budget':
+            prompt = f"Provide a realistic, estimated budget for a 7-day mid-range trip to {user_query} for one person, in Indian Rupees (₹). Break it down by: Flights, Accommodation, Food, and Activities."
+        elif intent == 'transport':
+            parts = [p.strip() for p in user_query.split(' to ')]
+            if len(parts) != 2:
+                return jsonify({'type': 'text', 'data': "Please use the format 'Source to Destination', e.g., 'Mumbai to Delhi'."})
+            source, destination = parts
+            prompt = f"Suggest the best transport options (flights, trains, buses) from {source} to {destination}. Provide 1-2 options for each category."
+        
+        # ✅ NEW: Handle the general chatbot intent
+        elif intent == 'chatbot':
+            prompt = (
+                "You are a friendly and helpful customer support chatbot for a travel website called 'Tourist'. "
+                "Your knowledge is limited to the features of this website. "
+                "Here is some information about the site: "
+                "- Users can book pre-defined packages or request fully custom tours. "
+                "- Booking requires passenger details before payment. "
+                "- Confirmed bookings can be cancelled from the 'My Bookings' page for a 10% fee. "
+                "- Admins can manage users, packages, and bookings from the admin dashboard. "
+                "- The website has an AI Itinerary Generator and a Budget Estimator. "
+                "Now, please answer the following user question concisely and politely. "
+                f"User Question: '{user_query}'"
+            )
+
+        else:
+            return jsonify({'error': 'Unknown intent.'}), 400
+
         response = model.generate_content(prompt)
         
-        attractions = []
-        for line in response.text.strip().split('\n'):
-            if '. ' in line:
-                parts = line.split('. ', 1)[1].split(' - ', 1)
-                if len(parts) == 2:
-                    attractions.append({'name': parts[0].strip(), 'description': parts[1].strip()})
+        # ... (rest of the function to return the response)
         
-        return jsonify({'attractions': attractions})
+        if intent == 'attractions':
+            attractions = []
+            for line in response.text.strip().split('\n'):
+                if ' - ' in line:
+                    name, desc = line.split(' - ', 1)
+                    attractions.append({'name': name.strip(), 'description': desc.strip()})
+            return jsonify({'type': 'attractions', 'data': attractions})
+        else: # For budget, transport, and chatbot, return plain text
+            return jsonify({'type': 'text', 'data': response.text})
 
     except Exception as e:
         print(f"API AI Error: {e}")
         return jsonify({'error': 'An error occurred while fetching data.'}), 500
-# ✅ END: NEW API ROUTE FOR THE WIDGET
 
+    
 # --- Admin Routes (Basic Example) ---
 @app.route('/admin_login', methods=['GET', 'POST'])
 def admin_login():
