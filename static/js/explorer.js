@@ -1,5 +1,3 @@
-// Replace the content of your static/js/explorer.js file with this
-
 document.addEventListener("DOMContentLoaded", () => {
     const exploreWidget = document.querySelector(".explore-widget");
     const toggleBtn = document.getElementById("explore-toggle-btn");
@@ -12,9 +10,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const intentBtns = document.querySelectorAll(".intent-btn");
     const formContainer = document.getElementById("explore-form-container");
     const intentFollowUp = document.getElementById("intent-follow-up");
+    const suggestionsContainer = document.getElementById("chatbot-suggestions");
     let currentIntent = '';
 
-    // Toggle widget visibility
+    // Event listeners to show/hide the widget
     toggleBtn.addEventListener("click", () => {
         exploreWidget.style.display = exploreWidget.style.display === "flex" ? "none" : "flex";
     });
@@ -23,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
         resetWidget();
     });
 
- // Handle intent button clicks
+    // Handle clicks on the main action buttons
     intentBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             currentIntent = btn.dataset.intent;
@@ -31,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
             intentButtonsContainer.style.display = 'none';
             formContainer.style.display = 'block';
             userInput.focus();
+            suggestionsContainer.innerHTML = ''; 
 
             if (currentIntent === 'attractions') {
                 intentFollowUp.textContent = "Great! Which city or country would you like to explore?";
@@ -41,64 +41,99 @@ document.addEventListener("DOMContentLoaded", () => {
             } else if (currentIntent === 'transport') {
                 intentFollowUp.textContent = "Okay, where are you traveling from and to?";
                 userInput.placeholder = "e.g., Mumbai to Delhi";
-            } 
-            // ✅ NEW: Handle the chatbot intent
-            else if (currentIntent === 'chatbot') {
-                intentFollowUp.textContent = "Sure, How Can I help you?";
-                userInput.placeholder = "e.g., How do I cancel my booking?";
+            } else if (currentIntent === 'chatbot') {
+                intentFollowUp.textContent = "Sure, I can help with that. Ask your own question, or select one below.";
+                userInput.placeholder = "Type your question here...";
+                
+                const suggestions = ["How do I cancel a booking?", "What is the refund policy?", "How do custom tours work?"];
+                suggestions.forEach(text => {
+                    const suggBtn = document.createElement('button');
+                    suggBtn.textContent = text;
+                    suggBtn.className = 'suggestion-btn';
+                    suggBtn.onclick = () => {
+                        userInput.value = text;
+                        sendMessage();
+                    };
+                    suggestionsContainer.appendChild(suggBtn);
+                });
             }
         });
     });
 
-    // Handle form submission
-    exploreForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const placeName = userInput.value.trim();
-        if (placeName === "") return;
+    // Function to send the message to the backend
+    const sendMessage = async () => {
+        const userQuery = userInput.value.trim();
+        if (userQuery === "") return;
 
         formContainer.style.display = 'none';
+        suggestionsContainer.style.display = 'none';
         resultsContainer.innerHTML = '<div class="bot-message">Thinking...</div>';
 
         try {
             const response = await fetch('/api/explore', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ place_name: placeName, intent: currentIntent })
+                body: JSON.stringify({ place_name: userQuery, intent: currentIntent })
             });
-
             const data = await response.json();
-            resultsContainer.innerHTML = "";
+            
+            resultsContainer.innerHTML = ""; // Clear the "Thinking..." message
 
             if (data.error) {
-                resultsContainer.innerHTML = `<div class="bot-message">${data.error}</div>`;
-            } else if (data.type === 'attractions' && data.data.length > 0) {
-                data.data.forEach(attraction => {
-                    const item = document.createElement('div');
-                    item.className = 'attraction-item';
-                    item.innerHTML = `<h6>${attraction.name}</h6><p>${attraction.description}</p>`;
-                    resultsContainer.appendChild(item);
-                });
+                appendMessage(data.error, 'bot-message');
             } else if (data.type === 'text') {
-                const item = document.createElement('div');
-                item.className = 'bot-message';
-                item.style.whiteSpace = 'pre-wrap';
-                item.textContent = data.data;
-                resultsContainer.appendChild(item);
+                // ✅ NEW: Check if the AI response is empty
+                if (data.data && data.data.trim() !== "") {
+                    appendMessage(data.data, 'bot-message', true);
+                } else {
+                    // Show a fallback message if the AI gives an empty response
+                    appendMessage("I'm sorry, I couldn't find a specific answer for that. Could you try rephrasing your question?", 'bot-message');
+                }
+            } else if (data.type === 'attractions' && data.data.length > 0) {
+                const list = document.createElement('ul');
+                list.className = 'attractions-list';
+                data.data.forEach(item => {
+                    const listItem = document.createElement('li');
+                    listItem.innerHTML = `<strong>${item.name}:</strong> ${item.description}`;
+                    list.appendChild(listItem);
+                });
+                resultsContainer.appendChild(list);
             } else {
-                resultsContainer.innerHTML = '<div class="bot-message">Sorry, I couldn\'t find any information.</div>';
+                appendMessage("I couldn't find any information for that request. Please try again.", 'bot-message');
             }
+
         } catch (error) {
-            resultsContainer.innerHTML = '<div class="bot-message">There was a network error. Please try again.</div>';
+            resultsContainer.innerHTML = "";
+            appendMessage("There was a network error. Please check your connection and try again.", 'bot-message');
         }
         
-        // Add a reset button
+        // Add a reset button to start over
         const resetButton = document.createElement('button');
         resetButton.textContent = 'Ask Something Else';
         resetButton.className = 'btn btn-secondary btn-sm mt-3';
         resetButton.onclick = resetWidget;
         resultsContainer.appendChild(resetButton);
+    };
+
+    // Helper function to add a message to the chat body
+    function appendMessage(text, className, usePreWrap = false) {
+        const messageDiv = document.createElement("div");
+        messageDiv.className = className;
+        messageDiv.textContent = text;
+        if (usePreWrap) {
+            messageDiv.style.whiteSpace = 'pre-wrap';
+        }
+        resultsContainer.appendChild(messageDiv);
+        return messageDiv;
+    }
+
+    // Handle form submission
+    exploreForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        sendMessage();
     });
 
+    // Function to reset the widget to its initial state
     function resetWidget() {
         resultsContainer.innerHTML = "";
         initialMessage.style.display = 'block';
@@ -106,5 +141,7 @@ document.addEventListener("DOMContentLoaded", () => {
         formContainer.style.display = 'none';
         userInput.value = "";
         currentIntent = '';
+        suggestionsContainer.innerHTML = '';
+        suggestionsContainer.style.display = 'block';
     }
 });

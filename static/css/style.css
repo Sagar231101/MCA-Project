@@ -541,3 +541,22 @@
     font-size: 18px;
     flex-shrink: 0;
 }
+
+
+#chatbot-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.suggestion-btn {
+    background-color: #e9ecef;
+    border: 1px solid #dee2e6;
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.suggestion-btn:hover {
+    background-color: #dee2e6;
+}
